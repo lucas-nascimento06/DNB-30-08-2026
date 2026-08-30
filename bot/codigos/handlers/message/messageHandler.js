@@ -180,9 +180,9 @@ const MEDIA_TYPES = [
     'documentWithCaptionMessage',
 ];
 
-// ============================================
+// ===========================================
 // 🔥 CACHE PARA EVITAR DUPLICATAS
-// ============================================
+// ===========================================
 const processedMessages = new Set();
 const MESSAGE_CACHE_LIMIT = 200;
 
