@@ -38,7 +38,7 @@ const STICKER_MAP = [
     file: 'carinho3.jpg',
     tags: [
       'obrigada', 'obrigado', 'valeu', 'gratidão', 'grata', 'grato', 'que fofo', 'que amor',
-      'pão de ló', 'brigada', 'brigado', 'muito obrigada', 'muito obrigado', 'vlw',
+      'brigada', 'brigado', 'muito obrigada', 'muito obrigado', 'vlw',
       'obg', 'obrigadão', 'thanks', 'thank you', 'obrigadinha', 'que gentileza',
       'que atencioso', 'que atenciosa', 'agradecida', 'agradecido', 'agradeço',
       'fico feliz', 'me fez feliz', 'alegria', 'alegrou meu dia', 'fez meu dia',
@@ -85,7 +85,7 @@ const STICKER_MAP = [
   {
     file: 'risada4.jpg',
     tags: [
-      'lindeza', 'que lindeza', 'kkk linda', 'graça', 'bah', 'tri',
+      'lindeza', 'que lindeza', 'kkk linda', 'graça',
       'que graça', 'gracinha', 'graciosidade', 'que charme', 'charme',
       'que estilo', 'estilosa', 'estiloso', 'elegante', 'elegância',
       'maravilhosa', 'maravilhoso', 'maravilha', 'incrível', 'incrivel',
@@ -93,6 +93,120 @@ const STICKER_MAP = [
       'que arraso', 'poderosa', 'poderoso', 'rainha', 'rei', 'diva',
       'que diva', 'deus', 'meu deus que perfeição', 'top', 'top demais',
       'muito bom', 'que bom', 'adorei', 'perfeição', 'perfeicao',
+    ]
+  },
+
+  // CONCORDA
+  {
+    file: 'concorda.jpg',
+    tags: [
+      'concordo', 'concorda', 'exatamente', 'exato', 'isso mesmo', 'é isso',
+      'verdade', 'é verdade', 'com certeza', 'com toda certeza', 'certeza',
+      'com certeza absoluta', 'com toda a razão', 'razão', 'tem razão',
+      'você tem razão', 'vc tem razão', 'sim', 'com certeza sim', 'é claro',
+      'óbvio', 'obvio', 'sem dúvida', 'sem duvida', 'faz sentido', 'exato isso',
+      'confere', 'bate', 'é por aí', 'é por ai', 'fechou', 'combinado',
+      'apoiado', 'apoiadíssimo', 'pode crer', 'com toda', '👍', '✅', '💯',
+      '🙌', '👌', '🤝', '😌', '🫡',
+    ]
+  },
+
+  // DEBOCHE
+  {
+    file: 'deboche1.jpg',
+    tags: [
+      'sei', 'sei sei', 'sei lá', 'tá bom', 'ta bom', 'aham', 'aham sei',
+      'duvido', 'tá certo', 'ta certo', 'aham tá', 'sei sim', 'sei não',
+      'tá jurando', 'ta jurando', 'jura', 'sério mesmo', 'sei viu',
+      '🙄', '😏', '🤨',
+    ]
+  },
+  {
+    file: 'deboche2.jpg',
+    tags: [
+      'fala sério', 'para com isso', 'para com isso kkk', 'olha só', 'ah tá',
+      'ah ta', 'imagina', 'imagina só', 'vai com fé', 'vai que cola',
+      'conta outra', 'me convence', 'não me convence', 'nao me convence',
+      '😂🙄', '😒', '🤦',
+    ]
+  },
+  {
+    file: 'deboche3.jpg',
+    tags: [
+      'mentira', 'mentiroso', 'mentirosa', 'não acredito em você', 'nao acredito em você',
+      'para de mentir', 'tá mentindo', 'ta mentindo', 'mentindo', 'inventando',
+      'história forte', 'historia forte', 'sei que tá mentindo',
+      '😤', '🙅', '🙅‍♀️',
+    ]
+  },
+  {
+    file: 'deboche4.jpg',
+    tags: [
+      'convencido', 'convencida', 'metido', 'metida', 'se acha', 'se achando',
+      'ego', 'egocêntrico', 'egocentrica', 'cheio de si', 'cheia de si',
+      'pose', 'com pose', 'só falta', 'humildade zero',
+      '😎', '💅', '🫠',
+    ]
+  },
+  {
+    file: 'deboche5.jpg',
+    tags: [
+      'chato', 'chata', 'irritante', 'enche o saco', 'enchendo o saco',
+      'cansativo', 'cansativa', 'insuportável', 'insuportavel', 'sem noção',
+      'sem nocao', 'folgado', 'folgada',
+      '😑', '🫤', '😐',
+    ]
+  },
+  {
+    file: 'deboche6.jpg',
+    tags: [
+      'não to nem aí', 'nao to nem ai', 'sei lá viu', 'que seja', 'tanto faz',
+      'nem ligo', 'não ligo', 'nao ligo', 'foda-se', 'liga não', 'liga nao',
+      'pouco importa', 'zero interesse',
+      '🤷', '🤷‍♀️', '😮‍💨',
+    ]
+  },
+  {
+    file: 'deboche7.jpg',
+    tags: [
+      'te peguei', 'peguei você', 'flagrei', 'flagra', 'olha o que achei',
+      'era você', 'sabia', 'eu sabia', 'suspeitava', 'agora entendi tudo',
+      'saca só', 'olha só quem', 'engana', 'enganando', 'me engana',
+      '👀', '😈', '🕵️', '🕵️‍♀️',
+    ]
+  },
+
+  // PENSANDO
+  {
+    file: 'pensando.jpg',
+    tags: [
+      'pensando', 'deixa eu pensar', 'não sei', 'nao sei', 'sei lá',
+      'sei la', 'hmm', 'hummm', 'humm', 'talvez', 'quem sabe',
+      'boa pergunta', 'vou pensar', 'deixa eu ver', 'não faço ideia',
+      'nao faço ideia', 'complicado', 'difícil dizer', 'dificil dizer',
+      '🤔', '🧐', '💭', '🤷‍♀️', '🤷‍♂️',
+    ]
+  },
+
+  // SURPRESA
+  {
+    file: 'surpresa.jpg',
+    tags: [
+      'chocada', 'chocado', 'que susto', 'susto', 'não esperava', 'nao esperava',
+      'não acredito nisso', 'nao acredito nisso', 'sério isso', 'serio isso',
+      'meu deus do céu', 'meu deus do ceu', 'espantada', 'espantado',
+      'surpresa', 'me surpreendeu', 'nossa mesmo', 'não sabia disso',
+      'nao sabia disso',
+      '😱', '😨', '😧', '🫢',
+    ]
+  },
+  {
+    file: 'surpresa2.jpg',
+    tags: [
+      'vixe', 'viixe', 'oxente', 'nossa senhora', 'credo', 'eita porra',
+      'eita', 'que isso', 'para tudo', 'para tudo agora', 'pera aí',
+      'pera ai', 'quê isso', 'que loucura', 'olha isso', 'olha só isso',
+      '😳', '🫣', '😮',
     ]
   },
 ];
