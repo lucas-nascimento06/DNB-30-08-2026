@@ -1,4 +1,5 @@
 import pool from '../../../../db.js';
+import { flushDC } from '../../features/dcTracker.js';
 
 function extractDigits(number) {
     if (!number) return null;
@@ -14,6 +15,12 @@ function getNumeroReal(message) {
 export async function dcHandler(sock, message) {
     const from = message.key.remoteJid;
     try {
+        // Garante que qualquer DC ganho recentemente (ainda no buffer, aguardando
+        // o flush periódico de 30s) já esteja gravado antes de mostrar o saldo.
+        // Isso evita a pessoa achar que "não está contando" quando na real só
+        // está aguardando o próximo ciclo de gravação em lote.
+        await flushDC();
+
         const numeroCompleto = getNumeroReal(message);
         const userId = extractDigits(numeroCompleto);
 

@@ -5,6 +5,14 @@ const DC_POR_MENSAGEM = 1; // ajuste aqui quanto vale cada mensagem
 const processedDC = new Set();
 const CACHE_LIMIT = 200;
 
+// ⚙️ Configuração do batching
+const FLUSH_INTERVAL_MS = 30 * 1000; // escreve no banco a cada 30s
+const FLUSH_MAX_BUFFER = 50;         // ou antes, se acumular 50 mensagens
+
+// Buffer em memória com as mensagens pendentes de gravar
+let pendingBuffer = [];
+let flushing = false;
+
 const TIPOS_VALIDOS = new Set([
     'conversation', 'extendedTextMessage', 'imageMessage', 'videoMessage',
     'stickerMessage', 'audioMessage', 'voiceMessage', 'ptvMessage',
@@ -48,6 +56,10 @@ function getNumeroReal(message) {
     return null;
 }
 
+/**
+ * Chamada a cada mensagem recebida. Agora NÃO bate no banco diretamente —
+ * só valida e empilha no buffer em memória. A escrita real acontece no flush.
+ */
 export async function trackDC(sock, message) {
     try {
         if (!message?.key?.remoteJid?.endsWith('@g.us')) return;
@@ -70,26 +82,108 @@ export async function trackDC(sock, message) {
         const grupoId = message.key.remoteJid;
         const messageId = message.key.id;
 
-        const inserted = await pool.query(
-            `INSERT INTO damas_dc_messages (grupo_id, user_id, message_id, tipo, dc_ganho)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (grupo_id, message_id) DO NOTHING
-             RETURNING id`,
-            [grupoId, numeroLimpo, messageId, tipo, DC_POR_MENSAGEM]
-        );
+        pendingBuffer.push({
+            grupoId,
+            userId: numeroLimpo,
+            messageId,
+            tipo,
+            dcGanho: DC_POR_MENSAGEM,
+        });
 
-        if (inserted.rowCount === 0) return; // já contada antes
+        console.log(`🧾 [DC] Enfileirado +${DC_POR_MENSAGEM} DC para ${numeroLimpo} (buffer: ${pendingBuffer.length})`);
 
-        await pool.query(
-            `INSERT INTO damas_dc_wallets (user_id, saldo)
-             VALUES ($1, $2)
-             ON CONFLICT (user_id)
-             DO UPDATE SET saldo = damas_dc_wallets.saldo + $2, atualizado_em = NOW()`,
-            [numeroLimpo, DC_POR_MENSAGEM]
-        );
-
-        console.log(`💰 [DC] +${DC_POR_MENSAGEM} DC para ${numeroLimpo}`);
+        if (pendingBuffer.length >= FLUSH_MAX_BUFFER) {
+            // Não precisa esperar o timer, já dispara o flush agora
+            flushDC().catch(err => console.error('[trackDC] Erro no flush por limite:', err.message));
+        }
     } catch (err) {
         console.error('[trackDC] Erro:', err.message);
     }
 }
+
+/**
+ * Escreve todo o buffer acumulado no banco em duas queries em lote,
+ * não importa quantas mensagens tenham se acumulado.
+ *
+ * Exportada para poder ser chamada "sob demanda" antes de qualquer operação
+ * que dependa do saldo real e atualizado (ex: #dc, #emprestar, #lance,
+ * #fecharleilao) — assim garantimos consistência sem perder o benefício
+ * do batching no caminho de alto volume (mensagem por mensagem).
+ */
+export async function flushDC() {
+    if (flushing) return; // evita flush concorrente
+    if (pendingBuffer.length === 0) return;
+
+    flushing = true;
+    const batch = pendingBuffer;
+    pendingBuffer = [];
+
+    try {
+        // 1) Bulk insert das mensagens (dedup por grupo_id + message_id)
+        const values = [];
+        const placeholders = batch.map((item, i) => {
+            const base = i * 5;
+            values.push(item.grupoId, item.userId, item.messageId, item.tipo, item.dcGanho);
+            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+        }).join(', ');
+
+        const insertResult = await pool.query(
+            `INSERT INTO damas_dc_messages (grupo_id, user_id, message_id, tipo, dc_ganho)
+             VALUES ${placeholders}
+             ON CONFLICT (grupo_id, message_id) DO NOTHING
+             RETURNING user_id, dc_ganho`,
+            values
+        );
+
+        if (insertResult.rowCount === 0) {
+            console.log(`💾 [DC] Flush: 0 mensagens novas de um lote de ${batch.length} (todas já contadas)`);
+            return;
+        }
+
+        // 2) Agrega quanto cada usuário ganhou de fato (só das linhas que foram inseridas)
+        const ganhosPorUsuario = new Map();
+        for (const row of insertResult.rows) {
+            const atual = ganhosPorUsuario.get(row.user_id) || 0;
+            ganhosPorUsuario.set(row.user_id, atual + Number(row.dc_ganho));
+        }
+
+        // 3) Bulk upsert dos saldos, um único INSERT com vários VALUES
+        const walletValues = [];
+        const walletPlaceholders = [...ganhosPorUsuario.entries()].map(([userId, ganho], i) => {
+            const base = i * 2;
+            walletValues.push(userId, ganho);
+            return `($${base + 1}, $${base + 2})`;
+        }).join(', ');
+
+        await pool.query(
+            `INSERT INTO damas_dc_wallets (user_id, saldo)
+             VALUES ${walletPlaceholders}
+             ON CONFLICT (user_id)
+             DO UPDATE SET saldo = damas_dc_wallets.saldo + EXCLUDED.saldo, atualizado_em = NOW()`,
+            walletValues
+        );
+
+        console.log(`💰 [DC] Flush concluído: ${insertResult.rowCount} mensagens novas, ${ganhosPorUsuario.size} usuário(s) atualizado(s)`);
+    } catch (err) {
+        console.error('[flushDC] Erro:', err.message);
+        // Em caso de erro, devolve os itens pro buffer pra tentar de novo no próximo flush
+        pendingBuffer = batch.concat(pendingBuffer);
+    } finally {
+        flushing = false;
+    }
+}
+
+// Dispara o flush periodicamente
+setInterval(() => {
+    flushDC().catch(err => console.error('[trackDC] Erro no flush periódico:', err.message));
+}, FLUSH_INTERVAL_MS);
+
+// Garante que o buffer não se perca se o processo for encerrado (Ctrl+C, PM2 restart, etc)
+async function flushOnExit() {
+    if (pendingBuffer.length === 0) return;
+    console.log(`🛑 [DC] Encerrando: gravando ${pendingBuffer.length} mensagem(ns) pendente(s) antes de sair...`);
+    await flushDC();
+}
+
+process.on('SIGINT', async () => { await flushOnExit(); process.exit(0); });
+process.on('SIGTERM', async () => { await flushOnExit(); process.exit(0); });

@@ -11,31 +11,25 @@ import { getGroupAdmins, isUserAdmin } from './grupoUtils.js';
  */
 const deleteCommandMessage = async (sock, groupId, messageKey) => {
     const delays = [0, 100, 500, 1000, 2000, 5000];
-    
-    console.log('🔍 DEBUG DELETE - Recebido:');
-    console.log('   - groupId:', groupId);
-    console.log('   - messageKey:', JSON.stringify(messageKey, null, 2));
-    
+
     for (let i = 0; i < delays.length; i++) {
         try {
             if (delays[i] > 0) await new Promise(r => setTimeout(r, delays[i]));
-            
+
             const key = {
                 remoteJid: messageKey.remoteJid || groupId,
                 fromMe: false,
                 id: messageKey.id,
                 participant: messageKey.participant
             };
-            
-            console.log(`🔍 Tentativa ${i + 1} - Key construída:`, JSON.stringify(key, null, 2));
-            
+
             await sock.sendMessage(groupId, { delete: key });
-            console.log(`✅ Comando blacklist deletado (tentativa ${i + 1})`);
             return true;
         } catch (error) {
-            console.log(`❌ Tentativa ${i + 1} de deletar comando falhou - Erro:`, error.message);
+            // tenta de novo no próximo delay
         }
     }
+    console.log('⚠️ [blacklist] Não foi possível deletar o comando após todas as tentativas');
     return false;
 };
 
@@ -46,18 +40,16 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     const lowerContent = content?.toLowerCase().trim();
     const userMsgKey = msg?.key;
 
-    console.log('\n🔍 ============ DEBUG BLACKLIST HANDLER ============');
-    console.log('📥 from:', from);
-    console.log('📥 userId:', userId);
-    console.log('📥 content:', content);
-    console.log('📥 msg recebido:', msg ? 'SIM' : 'NÃO');
-    console.log('📥 msg.key existe:', userMsgKey ? 'SIM' : 'NÃO');
-    if (userMsgKey) {
-        console.log('📥 msg.key detalhes:', JSON.stringify(userMsgKey, null, 2));
-    }
-    console.log('==================================================\n');
-
     if (!lowerContent) return false;
+
+    // Só segue se for de fato um comando de blacklist — evita ruído de log em toda mensagem
+    const isBlacklistCommand = lowerContent.startsWith('#addlista ')
+        || lowerContent.startsWith('#remlista ')
+        || lowerContent.startsWith('#verilista ')
+        || lowerContent === '#lista'
+        || lowerContent === '#infolista';
+
+    if (!isBlacklistCommand) return false;
 
     // Função para verificar admin em grupos
     async function requireAdmin() {
@@ -66,7 +58,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
             if (!isUserAdmin(userId, groupAdmins)) {
                 // Deleta o comando mesmo se não for admin - COM AWAIT
                 await deleteCommandMessage(sock, from, userMsgKey);
-                
+
                 const sentMsg = await sock.sendMessage(from, { text: adminOnlyMessage() });
                 setTimeout(() => sock.sendMessage(from, { delete: sentMsg.key }).catch(() => {}), 5000);
                 return false;
@@ -79,7 +71,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     if (lowerContent.startsWith('#addlista ')) {
         // DELETA O COMANDO IMEDIATAMENTE - COM AWAIT
         await deleteCommandMessage(sock, from, userMsgKey);
-        
+
         if (!await requireAdmin()) return true;
 
         const args = content.split(' ');
@@ -95,10 +87,10 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
         const motivo = args.slice(2).join(' ') || `Adicionado em ${formattedDate}`;
 
         const result = await addToBlacklist(number, motivo);
-        
+
         const sentMsg = await sock.sendMessage(from, { text: `${result} 🛑` });
         setTimeout(() => sock.sendMessage(from, { delete: sentMsg.key }).catch(() => {}), 5000);
-        
+
         return true;
     }
 
@@ -106,7 +98,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     if (lowerContent.startsWith('#remlista ')) {
         // DELETA O COMANDO IMEDIATAMENTE - COM AWAIT
         await deleteCommandMessage(sock, from, userMsgKey);
-        
+
         if (!await requireAdmin()) return true;
 
         const number = content.replace('#remlista ', '').trim();
@@ -126,7 +118,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     if (lowerContent.startsWith('#verilista ')) {
         // DELETA O COMANDO IMEDIATAMENTE - COM AWAIT
         await deleteCommandMessage(sock, from, userMsgKey);
-        
+
         if (!await requireAdmin()) return true;
 
         const number = content.replace('#verilista ', '').trim();
@@ -148,7 +140,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     if (lowerContent === '#lista') {
         // DELETA O COMANDO IMEDIATAMENTE - COM AWAIT
         await deleteCommandMessage(sock, from, userMsgKey);
-        
+
         if (!await requireAdmin()) return true;
 
         const result = await listBlacklist();
@@ -161,7 +153,7 @@ export async function handleBlacklistCommands(sock, from, userId, content, msg) 
     if (lowerContent === '#infolista') {
         // DELETA O COMANDO IMEDIATAMENTE - COM AWAIT
         await deleteCommandMessage(sock, from, userMsgKey);
-        
+
         const result = getBlacklistHelp();
         const sentMsg = await sock.sendMessage(from, { text: `ℹ️ Informações da Blacklist:\n\n${result}` });
         setTimeout(() => sock.sendMessage(from, { delete: sentMsg.key }).catch(() => {}), 20000);

@@ -3,6 +3,7 @@
 
 import pool from '../../../../db.js';
 import { anunciosCache } from './leilaoCache.js';
+import { flushDC } from '../../features/dcTracker.js';
 
 function extractDigits(number) {
     if (!number) return null;
@@ -51,6 +52,11 @@ export async function handleLanceCommand(sock, message, content) {
         }, { quoted: message });
         return true;
     }
+
+    // Garante que qualquer DC ganho recentemente (ainda no buffer do dcTracker,
+    // aguardando o flush periódico) já esteja gravado antes de checar o saldo
+    // pro lance — evita recusar por "saldo insuficiente" incorreto.
+    await flushDC();
 
     const remetenteCompleto = getNumeroReal(message);
     const userId = extractDigits(remetenteCompleto);

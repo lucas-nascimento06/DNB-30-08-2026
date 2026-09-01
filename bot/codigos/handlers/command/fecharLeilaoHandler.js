@@ -3,6 +3,7 @@
 
 import pool from '../../../../db.js';
 import { anunciosCache } from './leilaoCache.js';
+import { flushDC } from '../../features/dcTracker.js';
 
 function extractDigits(number) {
     if (!number) return null;
@@ -66,6 +67,11 @@ export async function handleFecharLeilaoCommand(sock, message, content) {
         }, { quoted: message });
         return true;
     }
+
+    // Garante que qualquer DC ganho recentemente (ainda no buffer do dcTracker,
+    // aguardando o flush periódico) já esteja gravado antes de checar o saldo
+    // do líder do leilão — evita cancelar a transferência por saldo desatualizado.
+    await flushDC();
 
     const client = await pool.connect();
     try {

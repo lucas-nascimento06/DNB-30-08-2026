@@ -1,4 +1,5 @@
 import pool from '../../../../db.js';
+import { flushDC } from '../../features/dcTracker.js';
 
 function extractDigits(number) {
     if (!number) return null;
@@ -46,6 +47,11 @@ export async function dcTransferHandler(sock, message, content) {
     const from = message.key.remoteJid;
 
     try {
+        // Garante que qualquer DC ganho recentemente (ainda no buffer do dcTracker,
+        // aguardando o flush periódico) já esteja gravado antes de checar/mexer no
+        // saldo — evita recusar transferência por "saldo insuficiente" incorreto.
+        await flushDC();
+
         // 1️⃣ Descobrir quem está mandando
         const remetenteCompleto = getNumeroReal(message);
         const remetenteId = extractDigits(remetenteCompleto);
