@@ -70,7 +70,12 @@ export async function dcTransferHandler(sock, message, content) {
         }
 
         // 3️⃣ Extrair o valor do texto (ex: "#emprestar @pessoa 2")
-        const match = content.match(/(\d+(?:[.,]\d+)?)\s*$/);
+        // ⚠️ FIX: removemos o token da menção (@<lid/telefone>) ANTES de procurar
+        // o valor. Sem isso, o regex de "pegar os últimos dígitos do texto" podia
+        // grudar no número gigante do LID da pessoa marcada (ex: transferir
+        // "12215210321624412 DC" em vez do valor real digitado).
+        const contentSemMencao = content.replace(/@\S+/g, ' ').trim();
+        const match = contentSemMencao.match(/(\d+(?:[.,]\d+)?)\s*$/);
         if (!match) {
             await sock.sendMessage(from, {
                 text: '⚠️ Informe o valor. Ex: *#emprestar @pessoa 2*'
@@ -135,12 +140,16 @@ export async function dcTransferHandler(sock, message, content) {
         );
         const novoSaldo = Number(novoSaldoResult.rows[0]?.saldo || 0);
 
+        // ⚠️ FIX: o "mentions" precisa usar o MESMO número que aparece no texto
+        // (@${destinatarioId}). Antes estava passando o mentionedJid cru (LID),
+        // que não bate com o número real mostrado no texto — por isso o WhatsApp
+        // não conseguia resolver o nome do contato e exibia só o número puro.
         await sock.sendMessage(from, {
             text: `💸 Transferência realizada!\n\n` +
                   `Valor: *${valor.toLocaleString('pt-BR')} DC*\n` +
                   `Para: @${destinatarioId}\n` +
                   `Seu saldo agora: *${novoSaldo.toLocaleString('pt-BR')} DC*`,
-            mentions: [mentionedJid]
+            mentions: [`${destinatarioId}@s.whatsapp.net`]
         }, { quoted: message });
 
     } catch (err) {
