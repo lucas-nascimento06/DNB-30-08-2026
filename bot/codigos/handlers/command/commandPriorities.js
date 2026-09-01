@@ -7,7 +7,8 @@ import {
     handleSignosCommands,
     handleBlacklistGroup,
     handleVarreduraCommand,
-    handleHoroscopoLegacy
+    handleHoroscopoLegacy,
+    handleAjudaDcCommand
 } from './commandHandlers.js';
 import { handlePromoverRebaixar } from './promoverHandler.js'; // 👈 NOVO
 
@@ -59,6 +60,9 @@ export async function processCommandPriorities(
     if (!handled) handled = await handleBlacklistGroup(sock, from, userId, content, message);
     if (!handled) handled = await handleVarreduraCommand(sock, message, content, from, userId);
     if (!handled) handled = await handleHoroscopoLegacy(sock, message, content, from);
+
+    // 📜 PRIORIDADE 9.5: #LCMD — lista de comandos do DC
+    if (!handled) handled = await handleAjudaDcCommand(sock, message, content);
 
     // 👑 PRIORIDADE 10: PROMOVER / REBAIXAR
     if (!handled) handled = await handlePromoverRebaixar(sock, message, from, userId);

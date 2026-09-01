@@ -4,6 +4,7 @@ import { handleBlacklistCommands } from '../../../codigos/moderation/blacklist/b
 import { listarSignos, handleHoroscopoCommand } from '../../features/horoscopoHandler.js';
 import { scanAndRemoveBlacklisted } from '../../../codigos/moderation/blacklist/blacklistFunctions.js';
 import { handleChamarCommand } from './chamarHandler.js';
+import { handleAjudaDcCommand } from './ajudaDcHandler.js';
 
 /**
  * Função para deletar mensagem com múltiplas tentativas (IGUAL AO #BAN)
@@ -109,3 +110,6 @@ export async function handleHoroscopoLegacy(sock, message, content, from) {
 
 // 💌 CHAMAR - delega tudo para chamarHandler.js
 export { handleChamarCommand };
+
+// 📜 LISTA DE COMANDOS DO DC - delega tudo para ajudaDcHandler.js
+export { handleAjudaDcCommand };
